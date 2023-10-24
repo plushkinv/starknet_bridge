@@ -68,22 +68,9 @@ for private_line in keys_list:
         account = web3.eth.account.from_key(private_key)
         wallet = account.address    
         log(f"I-{i}: Начинаю работу с {wallet}")
-        
-
-
-    
-
-        print(f"{wallet}")
-
         balance = web3.eth.get_balance(wallet)
-        balance_decimal = Web3.from_wei(balance, 'ether')
-        if balance_decimal < 0.005:
-            log("Недостаточно эфира.  жду когда пополнишь. на следующем круге попробую снова")
-            fun.save_wallet_to("no_money_wa", wallet)
-            keys_list.append(private_line)            
-            timeOut("teh")
-            continue        
-        
+        balance_decimal = Web3.from_wei(balance, 'ether')        
+
         while True:
             gasPrice = web3.eth.gas_price
             gasPrice_Gwei = Web3.from_wei(gasPrice, 'Gwei')
@@ -103,14 +90,28 @@ for private_line in keys_list:
         baseFee=round(mean(fee_history['baseFeePerGas']))
         maxFeePerGas = maxPriorityFeePerGas + round(baseFee * config.gas_kef)
         
-
+        
         komissia = maxFeePerGas * 120000
-        value = int(balance - komissia)
-        amount = int(value - 0.2*komissia)
+        if config.bridge_all_money:
+            value = int(balance - komissia) # сумма которая будет отправлена в самой транзакции. в нее войдет комиссия моста
+        else:
+            value_decimal = random.randint(int(config.bridge_min*100000000),int(config.bridge_max*100000000))/100000000
+            value = web3.to_wei(value_decimal, 'ether') 
+
+        amount = int(value - 0.2*komissia)  # сколько хотим получить на выходе
+
         print(f"balance {Web3.from_wei(balance, 'ether')}")
+        print(f"value_decimal {value_decimal}")
         print(f"value {Web3.from_wei(value, 'ether')}")
         print(f"komissia за транзакцию = {Web3.from_wei(komissia, 'ether')}")
         print(f"amount = {Web3.from_wei(amount, 'ether')}")
+
+        if balance_decimal < config.minimal_need_balance or balance < value + komissia:
+            log("Недостаточно эфира.  жду когда пополнишь. на следующем круге попробую снова")
+            fun.save_wallet_to("no_money_wa", wallet)
+            keys_list.append(private_line)            
+            timeOut("teh")
+            continue  
 
         dapp_contract = web3.eth.contract(address=web3.to_checksum_address(ethBridgeAddress), abi=ethBridgeAbi)
         transaction = dapp_contract.functions.deposit(
@@ -135,11 +136,12 @@ for private_line in keys_list:
             save_wallet_to("bridge_ok_pk", private_line)
             fun.delete_private_key_from_file("private_keys", private_line)
             fun.delete_wallet_from_file("no_money_wa", wallet)
+            fun.delete_wallet_from_file("bridge_false_pk", private_line)
         else:
             log_error(f'bridge false: {txn_hash}')
             save_wallet_to("bridge_false_pk", private_line)
-            timeOut("teh")
-            continue
+            fun.delete_wallet_from_file("no_money_wa", wallet)
+            keys_list.append(private_line)   
 
         timeOut()
 
@@ -147,6 +149,7 @@ for private_line in keys_list:
     except Exception as error:
         fun.log_error(f'bridge false: {error}')    
         save_wallet_to("bridge_false_pk", private_line)
+        keys_list.append(private_line)
         timeOut("teh")
         continue
 
