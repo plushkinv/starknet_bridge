@@ -50,7 +50,7 @@ for private_line in keys_list:
     private_key = string_list[0]
     wallet_out = string_list[1]    
     i+=1
-    if config.proxy_use:
+    if config.proxy_use == 2:
         while True:
             try:
                 requests.get(url=config.proxy_changeIPlink)
@@ -59,8 +59,7 @@ for private_line in keys_list:
                 print(f'Ваш новый IP-адрес: {result.text}')
                 break
             except Exception as error:
-                print(
-                    ' !!! Не смог подключиться через Proxy, повторяем через 2 минуты... ! Чтобы остановить программу нажмите CTRL+C или закройте терминал')
+                print(' !!! Не смог подключиться через Proxy, повторяем через 2 минуты... ! Чтобы остановить программу нажмите CTRL+C или закройте терминал')
                 time.sleep(120)
 
     try:
