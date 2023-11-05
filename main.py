@@ -70,6 +70,14 @@ for private_line in keys_list:
         balance = web3.eth.get_balance(wallet)
         balance_decimal = Web3.from_wei(balance, 'ether')        
 
+
+        if balance_decimal < config.minimal_need_balance:
+            log("Недостаточно эфира.  жду когда пополнишь. на следующем круге попробую снова")
+            fun.save_wallet_to("no_money_wa", wallet)
+            keys_list.append(private_line)            
+            timeOut("teh")
+            continue  
+
         while True:
             gasPrice = web3.eth.gas_price
             gasPrice_Gwei = Web3.from_wei(gasPrice, 'Gwei')
@@ -100,12 +108,11 @@ for private_line in keys_list:
         amount = int(value - 0.2*komissia)  # сколько хотим получить на выходе
 
         print(f"balance {Web3.from_wei(balance, 'ether')}")
-        print(f"value_decimal {value_decimal}")
         print(f"value {Web3.from_wei(value, 'ether')}")
         print(f"komissia за транзакцию = {Web3.from_wei(komissia, 'ether')}")
         print(f"amount = {Web3.from_wei(amount, 'ether')}")
 
-        if balance_decimal < config.minimal_need_balance or balance < value + komissia:
+        if balance < value + komissia:
             log("Недостаточно эфира.  жду когда пополнишь. на следующем круге попробую снова")
             fun.save_wallet_to("no_money_wa", wallet)
             keys_list.append(private_line)            
